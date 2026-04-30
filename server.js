@@ -94,13 +94,14 @@ async function startServer() {
 
         await bot.sendMessage(chatId, `Gemini 處理中...`);
         
+        const PARENT_DIR = path.join(__dirname, '..');
         const rgPath = path.join(__dirname, 'node_modules', '.bin');
         const env = { ...process.env, NO_COLOR: "1", TERM: "dumb" };
         if (fs.existsSync(rgPath)) {
             env.PATH = `${rgPath}${path.delimiter}${process.env.PATH}`;
         }
 
-        const sessionsPath = path.join(__dirname, '.gemini', 'sessions');
+        const sessionsPath = path.join(PARENT_DIR, '.gemini', 'sessions');
         const resumeFlag = fs.existsSync(sessionsPath) ? '--resume latest' : '';
         const userHome = process.env.USERPROFILE || process.env.HOME;
         const globalGeminiPath = path.join(userHome, '.gemini');
@@ -109,7 +110,7 @@ async function startServer() {
             '-NoProfile', 
             '-Command', 
             `$OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $env:NO_COLOR=1; $env:TERM='dumb'; gemini ${resumeFlag} --approval-mode yolo --skip-trust --include-directories "${globalGeminiPath}" --prompt "${text.replace(/"/g, '`"')}"`
-        ], { env, cwd: __dirname });
+        ], { env, cwd: PARENT_DIR });
 
         let outputBuffer = '';
 
@@ -124,7 +125,16 @@ async function startServer() {
 
         activeProcess.stderr.on('data', (data) => {
             const errStr = data.toString();
-            const noise = ['256-color support', 'TERM=dumb', 'Visual rendering will be limited', 'Ripgrep is not available', 'DeprecationWarning', 'node --trace-deprecation'];
+            const noise = [
+                '256-color support', 
+                'TERM=dumb', 
+                'Visual rendering will be limited', 
+                'Ripgrep is not available', 
+                'DeprecationWarning', 
+                'node --trace-deprecation',
+                'AttachConsole failed',
+                'conpty_console_list_agent.js'
+            ];
             if (!noise.some(msg => errStr.includes(msg))) {
                 safeSend(chatId, `⚠️ ${errStr}`);
             }
