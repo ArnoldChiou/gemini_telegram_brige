@@ -71,9 +71,15 @@ async function startServer() {
             html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
 
             // 4. 美化列表符號
-            html = html.replace(/^\*\s+/gm, '• ');
+            html = html.replace(/^[*\-]\s+/gm, '• ');
 
-            // 5. 處理超過 4000 字元的訊息
+            // 5. 轉換程式碼區塊 (Multi-line code)
+            html = html.replace(/```([\s\S]*?)```/g, '<pre>$1</pre>');
+
+            // 6. 轉換內聯代碼 (Inline code)
+            html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+
+            // 7. 處理超過 4000 字元的訊息
             const MAX_LENGTH = 4000;
             if (html.length > MAX_LENGTH) {
                 const chunks = [];
@@ -117,12 +123,12 @@ async function startServer() {
 
         if (text === '/start' || text === '/help') {
             const helpMsg = `
-🌟 **Gemini CLI Telegram Bridge** 🌟
+🌟 <b>Gemini CLI Telegram Bridge</b> 🌟
 
-- 直接輸入文字：開始 Gemini 對話
-- /stop：終止當前任務
-- /screenshot：擷取目前電腦畫面
-- /help：顯示此說明
+• 直接輸入文字：開始 Gemini 對話
+• /stop：終止當前任務
+• /screenshot：擷取目前電腦畫面
+• /help：顯示此說明
             `;
             await safeSend(chatId, helpMsg);
             return;
@@ -187,7 +193,9 @@ $Bitmap.Dispose()
         const globalGeminiPath = path.join(userHome, '.gemini');
 
         // 遵循 GEMINI.md 規範，加入 chcp 65001
-        const geminiCmd = `chcp 65001 >$null; $OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $env:NO_COLOR=1; $env:TERM='dumb'; gemini ${resumeFlag} --approval-mode yolo --skip-trust --include-directories "${globalGeminiPath}" --prompt "${text.replace(/"/g, '`"')}"`;
+        // 將雙引號轉義改為單引號包覆，減少反引號的使用
+        const geminiCmd = `chcp 65001 >$null; $OutputEncoding = [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $env:NO_COLOR=1; $env:TERM='dumb'; gemini ${resumeFlag} --approval-mode yolo --skip-trust --include-directories "${globalGeminiPath}" --prompt '${text.replace(/'/g, "''")}'`;
+
 
         activeProcess = spawn('powershell.exe', [
             '-NoProfile',
