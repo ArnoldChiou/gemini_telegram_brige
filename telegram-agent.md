@@ -6,7 +6,7 @@ agent_card_url: http://localhost:3000/.well-known/agent.json
 auth:
   type: http
   scheme: Bearer
-  token: $TELEGRAM_BRIDGE_TOKEN
+  value: $TELEGRAM_BRIDGE_TOKEN
 ---
 
 # Telegram 橋接代理
